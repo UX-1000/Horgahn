@@ -36,14 +36,14 @@
 /* ---------- Konstanten ---------- */
 const PRE_ALARM_MS = 2*60_000;
 const CHECK_MS     = 1_000;
-const TOLERANZ_MS  =   1_500;
+const TOLERANZ_MS = 2_500;
 const ACTIVE_WINDOW= 900_000;    // 15 min 
 
 /* ---------- UTC-Referenzliste ---------- */
 const alarmPlanUTC = [
   '00:22',
   '01:52',
-  '03:22',
+  '03:36',
   '04:52',
   '06:22',
   '07:52',
@@ -183,18 +183,24 @@ setInterval(()=>{
   const now=Date.now();
 
   alarms.forEach(a=>{
-    /* Voralarm */
-    if(preCB.checked && !a.preDone &&
-       Math.abs(now-(a.ts-PRE_ALARM_MS))<=TOLERANZ_MS){
-      playBeep('Voralarm – in 2 Minuten: '+a.text);
-      a.preDone=true;
-    }
+/* Voralarm */
+const preTarget = a.ts - PRE_ALARM_MS;               // Zeitpunkt des Early-Alerts
+if (
+  preCB.checked &&                    // Checkbox aktiv
+  !a.preDone &&                       // noch nicht ausgelöst
+  now >= preTarget - TOLERANZ_MS &&   // Fenster:   vorher …
+  now <= preTarget + TOLERANZ_MS      //             … nachher
+) {
+  playBeep('Early alert – 2 min: ' + a.text /* , audioPre */);
+  a.preDone = true;                   // markieren, damit er nur einmal kommt
+}
+
 	/* Hauptalarm */
 	if (!a.triggered &&
 		!(preCB.checked && a.preDone) &&           // ← NEU: unterdrückt Hauptalarm, wenn Voralarm bereits aktiv war
 		Math.abs(now - a.ts) <= TOLERANZ_MS) {
 
-	  playBeep('Es ist ' + a.text, audioMain);
+	  playBeep('Es ist ' + a.text);
 	  a.triggered = true;
 	}
 
