@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Horga'hn Timer</title>
+<link rel="icon" href="media/favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="container">
+  <!-- Überschrift + Countdown -->
+  <div class="header-row">
+    <h1>Horga'hn Timer</h1>
+    <span id="countdown"></span>
+  </div>
+
+  <!-- Buttons + Toggle -->
+  <div class="control-row">
+    <button id="startBtn">Start!</button>
+    <button id="stopBtn" disabled>Silence!</button>
+    <label class="toggle-label">
+      <input type="checkbox" id="preAlarmCB" class="toggle">
+      <span class="toggle-text">Pre-alarm (–2 min)</span>
+    </label>
+  </div>
+
+  <!-- Liste & Audio -->
+  <ul id="alarmList"></ul>
+  <audio id="alarmSound" src="media/alarm.mp3" preload="auto"></audio>
+
+</div>
+
+  <footer><div id="tzStatus"></div></footer>
+<script>
+/* ---------- Konstanten ---------- */
+const PRE_ALARM_MS = 2*60_000;
+const CHECK_MS     = 1_000;
+const TOLERANZ_MS  =   1_500;
+const ACTIVE_WINDOW= 900_000;    // 15 min 
+
+/* ---------- UTC-Referenzliste ---------- */
+const alarmPlanUTC = [
+  '00:22',
+  '01:52',
+  '03:22',
+  '04:52',
+  '06:22',
+  '07:52',
+  '09:22',
+  '10:52',
+  '12:22',
+  '13:52',
+  '15:22',
+  '16:52',
+  '18:22',
+  '19:52',
+  '21:22',
+  '22:52'
+];
+
+
+/* ---------- Lokale Liste erzeugen ---------- */
+function buildLocalPlan(utcPlan){
+  const today=new Date();
+  return utcPlan.map(t=>{
+    const [h,m]=t.split(':').map(Number);
+    const dUTC=new Date(Date.UTC(
+      today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate(),h,m
+    ));
+    return dUTC.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  }).sort((a,b)=>{
+    const [ha,ma]=a.split(':').map(Number);
+    const [hb,mb]=b.split(':').map(Number);
+    return ha*60+ma - (hb*60+mb);
+  });
+}
+const alarmPlan=buildLocalPlan(alarmPlanUTC);
+
+/* ---------- Hilfsfunktionen ---------- */
+const fmt=ms=>{
+  const s=Math.max(0,Math.floor(ms/1000));
+  const h=String(Math.floor(s/3600)).padStart(2,'0');
+  const m=String(Math.floor(s%3600/60)).padStart(2,'0');
+  const sec=String(s%60).padStart(2,'0');
+  return (h!=='00'?h+':':'')+m+':'+sec;
+};
+function playBeep(msg){
+  if(Notification?.permission==='granted'){
+    new Notification('⏰ Alarm',{body:msg,icon:'media/alarm-icon.png'});
+  }
+  audio.pause();audio.currentTime=0;
+  audio.play().then(()=>stopBtn.disabled=false)
+              .catch(()=>alert(msg));
+}
+
+/* ---------- DOM ---------- */
+const ul       = document.getElementById('alarmList');
+const startBtn = document.getElementById('startBtn');
+const stopBtn  = document.getElementById('stopBtn');
+const preCB    = document.getElementById('preAlarmCB');
+const cdDiv    = document.getElementById('countdown');
+const tzDiv    = document.getElementById('tzStatus');
+const audio    = document.getElementById('alarmSound');
+
+/*Pre alarm on by default*/
+if (preCB) {preCB.checked = true;}
+
+
+
+/* ---------- Liste rendern ---------- */
+const liRefs=alarmPlan.map(txt=>{
+  const li=document.createElement('li');
+  li.textContent=txt;ul.appendChild(li);return li;
+});
+
+/* ---------- Alarmobjekte ---------- */
+function makeAlarms(plan){
+  const now=Date.now();
+  const today=new Date();
+  return plan.map(t=>{
+    const [h,m]=t.split(':').map(Number);
+    const ts=new Date(
+      today.getFullYear(),today.getMonth(),today.getDate(),h,m
+    ).getTime();
+    return{
+      text:t,
+      ts,
+      triggered: ts<now,
+      preDone:   ts-PRE_ALARM_MS<now
+    };
+  });
+}
+let alarms=makeAlarms(alarmPlan);
+
+/* ---------- UI-Update ---------- */
+function updateUI(){
+  const now=Date.now();
+  let activeFound=false,nextIdx=-1;
+
+  alarms.forEach((a,i)=>{
+    const li=liRefs[i];
+    li.classList.remove('past','active','next');
+    const delta=now-a.ts;
+
+    if(delta>ACTIVE_WINDOW){li.classList.add('past');return;}
+    if(delta>=-TOLERANZ_MS && delta<=ACTIVE_WINDOW){
+      li.classList.add('active');activeFound=true;return;
+    }
+    if(!activeFound && nextIdx===-1 && delta<-TOLERANZ_MS)nextIdx=i;
+  });
+  if(!activeFound && nextIdx!==-1)liRefs[nextIdx].classList.add('next');
+
+  /* Countdown */
+  if(activeFound){
+    const act=alarms.find(a=>now-a.ts>=-TOLERANZ_MS&&now-a.ts<=ACTIVE_WINDOW);
+   cdDiv.textContent='active for '+fmt(ACTIVE_WINDOW-(now-act.ts));
+
+  }else if(nextIdx!==-1){
+    cdDiv.textContent='next event: '+fmt(alarms[nextIdx].ts-now);
+  }else cdDiv.textContent='';
+
+  /* TZ */
+  const off=-new Date().getTimezoneOffset()/60;
+  tzDiv.textContent='Time Zone: GMT'+(off>=0?'+':'')+off;
+}
+
+/* ---------- Buttons ---------- */
+let alarmsActive=false;
+startBtn.onclick=async ()=>{
+  try{await audio.play();}catch{} audio.pause();audio.currentTime=0;
+  if(Notification?.permission==='default')await Notification.requestPermission();
+  alarmsActive=true;
+  startBtn.classList.add('active');startBtn.textContent='Started.';
+  updateUI();
+};
+stopBtn.onclick=()=>{audio.pause();audio.currentTime=0;stopBtn.disabled=true;};
+audio.onended=()=>stopBtn.disabled=true;
+
+/* ---------- Haupt-Intervall ---------- */
+setInterval(()=>{
+  if(!alarmsActive)return;
+  const now=Date.now();
+
+  alarms.forEach(a=>{
+    /* Voralarm */
+    if(preCB.checked && !a.preDone &&
+       Math.abs(now-(a.ts-PRE_ALARM_MS))<=TOLERANZ_MS){
+      playBeep('Voralarm – in 2 Minuten: '+a.text);
+      a.preDone=true;
+    }
+    /* Hauptalarm */
+    if(!a.triggered && Math.abs(now-a.ts)<=TOLERANZ_MS){
+      playBeep('Es ist '+a.text);
+      a.triggered=true;
+    }
+  });
+  updateUI();
+},CHECK_MS);
+
+/* ---------- Initial & Reset ---------- */
+updateUI();
+(function scheduleReset(){
+  const now=new Date();
+  const next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1,0,5,0);
+  setTimeout(()=>{
+    alarms=makeAlarms(alarmPlan);
+    updateUI();
+    scheduleReset();
+  },next-now);
+})();
+</script>
+</body>
+</html>

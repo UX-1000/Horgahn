@@ -1,0 +1,111 @@
+/* ---------- Grundlayout ---------- */
+/* Basisgröße: mobile-first */
+html {
+  font-size: 1em;  /* Standard: 16px → hier bewusst größer */
+}
+
+body{
+  font-family:sans-serif;margin:0;min-height:100vh;
+  display:grid;place-items:center;
+  background:url(media/bg.webp) no-repeat center/cover;
+}
+#container{
+  width:auto; max-width:900px;
+  padding:2rem 1.5rem;border-radius:1rem;
+  background:rgba(255,255,240,.65);
+  box-shadow:0 .5rem 1rem rgba(0,0,0,.15);
+}
+
+/* ---------- Buttons ---------- */
+button{
+  font-size:1rem;padding:.5rem 1rem;margin-right:.5rem;
+  border-radius:.3rem;width:100%;box-sizing:border-box;
+}
+button.active{background:#4caf50;color:#fff}
+button:disabled{opacity:.6;cursor:not-allowed}
+
+/* ---------- Liste ---------- */
+#alarmList{
+  column-count:2;column-gap:1.2rem;list-style:none;padding:0;margin-top:1.5rem;
+}
+#alarmList li{break-inside:avoid;padding:.25rem 0}
+.next{font-weight:700;color:#c00}
+.past{color:#888;text-decoration:line-through}
+.active{color:#4caf50;font-weight:700}
+
+/* ---------- Header ---------- */
+.header-row{
+  display:flex;flex-direction:column;align-items:flex-start;
+  gap:.5rem;margin-bottom:2rem;
+}
+.header-row h1{margin:0;white-space:nowrap}
+#countdown{font-family:monospace;font-weight:600;font-size:1.1rem}
+
+/* ---------- Control-Row ---------- */
+.control-row{display:flex;flex-direction:column;align-items:stretch;gap:.75rem;margin-bottom:1rem}
+.toggle-label{cursor:pointer;display:flex;align-items:center;gap:.5rem}
+.toggle-text{font-size:.9rem}
+
+/* ---------- Toggle-Switch ---------- */
+/* ---------- Toggle-Switch – skaliert mit der Basis­schrift ---------- */
+input.toggle{
+  position:relative;
+  width: 3.2rem;               /* ≈ 18 px × 3 em = 57 px */
+  height:1.8rem;               /* ≈ 18 px × 3 em = 32 px */
+  appearance:none;-webkit-appearance:none;
+  cursor:pointer;outline:none;
+}
+input.toggle::before{
+  content:'';
+  position:absolute;inset:0;
+  border-radius:999px;
+  background:#777;
+  transition:.25s;
+}
+input.toggle::after{
+  content:'';
+  position:absolute;
+  top:0.15rem; left:0.15rem;         /* 0.15 rem ≈ 2.7 px auf Mobile */
+  width:1.5rem; height:1.5rem;       /* Knopf-Ø */
+  border-radius:50%;
+  background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.3);
+  transition:.25s;
+}
+input.toggle:checked::before{background:#4caf50;}
+input.toggle:checked::after {transform:translateX(1.7rem);} /* 3.2-1.5-0.15*2 */
+
+
+/* ---------- TZ-Status ---------- */
+#tzStatus{font-size:.9rem;color:#555;margin-top:.5rem;text-align:center}
+
+
+/* ======= BREAKPOINT ≥ 600 px ======= */
+@media (min-width:600px){
+}
+
+/* ======= BREAKPOINT ≥ 900 px ======= */
+
+/* Am Desktop bei schmalem Fenster wieder runterdrehen */
+@media (min-width: 900px) and (min-resolution: 2dppx) {
+  html { font-size: 3em; }  /* echtes hochauflösendes Gerät – Smartphone */
+}
+
+@media (min-width: 900px) and (max-resolution: 1.5dppx) {
+  html { font-size: 1em; }  /* normaler PC mit schmalem Browserfenster */
+}
+
+@media (min-width:600px ) and (max-resolution: 2.5dppx){
+	html {
+  font-size: 1em;  /* Standard: 16px → hier bewusst größer */
+}
+  .control-row{flex-direction:row;align-items:center}
+  button{width:8rem}
+  .header-row{flex-direction:row;align-items:center;gap:1.5rem}
+  #alarmList{column-count:4}
+footer{position:absolute;bottom:0;padding-bottom:1rem}
+}
+
+@media (min-width:600px ) and (min-resolution: 2dppx){
+footer{position:relative;bottom:0;padding-bottom:1rem}
+}
