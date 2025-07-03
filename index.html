@@ -189,11 +189,15 @@ setInterval(()=>{
       playBeep('Voralarm – in 2 Minuten: '+a.text);
       a.preDone=true;
     }
-    /* Hauptalarm */
-    if(!a.triggered && Math.abs(now-a.ts)<=TOLERANZ_MS){
-      playBeep('Es ist '+a.text);
-      a.triggered=true;
-    }
+	/* Hauptalarm */
+	if (!a.triggered &&
+		!(preCB.checked && a.preDone) &&           // ← NEU: unterdrückt Hauptalarm, wenn Voralarm bereits aktiv war
+		Math.abs(now - a.ts) <= TOLERANZ_MS) {
+
+	  playBeep('Es ist ' + a.text, audioMain);
+	  a.triggered = true;
+	}
+
   });
   updateUI();
 },CHECK_MS);
