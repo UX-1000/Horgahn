@@ -87,7 +87,12 @@ const fmt=ms=>{
 };
 function playBeep(msg){
   if(Notification?.permission==='granted'){
-    new Notification('⏰ Alarm',{body:msg,icon:'media/alarm-icon.webp'});
+     new Notification('Horga\'hn Hunt', {
+    body: msg,
+    icon: 'media/alarm-icon.webp',
+    tag:  'horgan-alarm',   // gleiche Gruppe
+    renotify: true          // jedes Mal Toast zeigen
+  });
   }
   audio.pause();audio.currentTime=0;
   audio.play().then(()=>stopBtn.disabled=false)
@@ -191,7 +196,7 @@ if (
   now >= preTarget - TOLERANZ_MS &&   // Fenster:   vorher …
   now <= preTarget + TOLERANZ_MS      //             … nachher
 ) {
-  playBeep("Horga'hn Hunt soon! " + a.text /* , audioPre */);
+  playBeep("Starting soon! " + a.text /* , audioPre */);
   a.preDone = true;                   // markieren, damit er nur einmal kommt
 }
 
@@ -200,7 +205,7 @@ if (
 		!(preCB.checked && a.preDone) &&           // ← NEU: unterdrückt Hauptalarm, wenn Voralarm bereits aktiv war
 		Math.abs(now - a.ts) <= TOLERANZ_MS) {
 
-	  playBeep("Horga'hn Hunt starting! " + a.text);
+	  playBeep("Starting now! " + a.text);
 	  a.triggered = true;
 	}
 
