@@ -171,7 +171,7 @@ startBtn.onclick=async ()=>{
   try{await audio.play();}catch{} audio.pause();audio.currentTime=0;
   if(Notification?.permission==='default')await Notification.requestPermission();
   alarmsActive=true;
-  startBtn.classList.add('active');startBtn.textContent='Started.';
+  startBtn.classList.add('active');startBtn.textContent='Running...';
   updateUI();
 };
 stopBtn.onclick=()=>{audio.pause();audio.currentTime=0;stopBtn.disabled=true;};
